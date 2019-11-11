@@ -2,6 +2,7 @@ import numpy as np
 import random
 
 
+
 class ReplayBuffer(object):
     def __init__(self, size):
         """Create Replay buffer.
@@ -11,22 +12,12 @@ class ReplayBuffer(object):
         size: int
             Max number of transitions to store in the buffer. When the buffer
             overflows the old memories are dropped.
-
-        Retrun
-        ----------
-        (array([state_t, ...]), 
-        array([action, ...]), 
-        array([reward, ...]), 
-        array([state_t+1, ...]), 
-        array([done, ...]))
-
-        how many columns: batch_size
         """
         self._storage = []
         self._maxsize = size
         self._next_idx = 0
 
-    def __len__(self):
+    def length(self):
         return len(self._storage)
 
     def add(self, obs_t, action, reward, obs_tp1, done):
@@ -35,7 +26,7 @@ class ReplayBuffer(object):
         if self._next_idx >= len(self._storage):
             self._storage.append(data)
         else:
-            self._storage[self._next_idx] = data  # 从开始时覆盖, self_next_idx=0
+            self._storage[self._next_idx] = data
         self._next_idx = (self._next_idx + 1) % self._maxsize
 
     def _encode_sample(self, idxes):
@@ -48,9 +39,7 @@ class ReplayBuffer(object):
             rewards.append(reward)
             obses_tp1.append(np.array(obs_tp1, copy=False))
             dones.append(done)
-        minibatch_matrix = np.array(
-            [obses_t, actions, rewards, obses_tp1, dones]).transpose()
-        return minibatch_matrix
+        return np.array(obses_t), np.array(actions), np.array(rewards), np.array(obses_tp1), np.array(dones)
 
     def sample(self, batch_size):
         """Sample a batch of experiences.
@@ -74,6 +63,6 @@ class ReplayBuffer(object):
             done_mask[i] = 1 if executing act_batch[i] resulted in
             the end of an episode and 0 otherwise.
         """
-        idxes = [random.randint(0, len(self._storage) - 1)
-                 for _ in range(batch_size)]
+        idxes = [random.randint(0, len(self._storage) - 1) for _ in range(batch_size)]
         return self._encode_sample(idxes)
+

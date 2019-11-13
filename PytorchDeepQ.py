@@ -1,13 +1,51 @@
-import tensorflow as tf
-from tensorflow import keras
+
 import numpy as np
 # import matplotlib.pyplot as matplot
 # import nni
 import random
 import replay_buffer
 
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
+import torchvision.transforms as T
 
-class DeepQ(object):
+
+class QNet(nn.Module):
+    def __init__(self):
+        super(QNet, self).__init__()
+        self.layer1 = nn.Linear(4, 16)
+
+        self.layer2 = nn.Linear(16, 32)
+
+        self.layer3 = nn.Linear(32, 2)
+
+        self.optimizer = optim.Adam(self.parameters())
+        self.loss_function = nn.MSELoss()
+
+    def forward(self, x):
+        x = torch.Tensor(x)
+        x = F.relu(self.layer1(x))
+        x = F.relu(self.layer2(x))
+        x = self.layer3(x)
+        return x
+
+    def predict(self, input):
+
+        return self(input)
+
+    def train(self, input, target_q_value):
+        input = torch.Tensor(input)
+        target_q_value = torch.Tensor(target_q_value)
+        self.optimizer.zero_grad()   # zero the gradient buffers
+        current_q_value = self(input)
+        loss = self.loss_function(current_q_value, target_q_value)
+        loss.backward()
+        self.optimizer.step()    # Does the update
+
+
+class DeepQ():
 
     # __q_net = tf.keras.Sequential()
     # __q_net_target = tf.keras.Sequential()
@@ -20,7 +58,7 @@ class DeepQ(object):
     # __discount_factor_gamma = 0
     # time_setp = 0
     # mini_batch_size = 0
-    # train_number = 0
+    train_number = 0
 
     def __init__(self, env=None, replay_buffer_size=10000, learning_rate=0.01, explore_epsilon=0.5, discount_factor_gamma=0.9, batch_size=32):
         self.__action_dimension = env.action_space.n
@@ -37,39 +75,7 @@ class DeepQ(object):
         self.replay_buffer = replay_buffer.ReplayBuffer(replay_buffer_size)
 
         # initialize q_net
-        self.__q_net = keras.Sequential([
-            keras.layers.Dense(32, activation='relu',
-                               input_shape=(self.__state_dimension,)),
-            keras.layers.Dense(32, activation='relu'),
-            keras.layers.Dense(self.__action_dimension, name="q_net")
-        ])
-        self.__optimizer = tf.keras.optimizers.Adam(
-            learning_rate=0.001, beta_1=0.9, beta_2=0.999, amsgrad=False)
-
-        self.__q_net.compile(
-            optimizer=keras.optimizers.RMSprop(lr=self.__learning_rate),
-            # optimizer='adam',
-            # optimizer="SGD",
-            # optimizer="RMSprop",
-            loss='MSE',
-            metrics=['mae'])
-
-        # q_target_net
-        # inputs = tf.keras.Input(
-        #     shape=(self.__state_dimension,), name='state_layer')
-        # x = tf.keras.layers.Dense(32, activation='relu')(inputs)
-        # x = tf.keras. layers.Dense(32, activation='relu')(x)
-        # outputs = tf.keras.layers.Dense(self.__action_dimension)(x)
-
-        # model = keras.Model(inputs=inputs, outputs=outputs,
-        #                     name='q_net_target')
-        # self.__q_net_target = model
-        # # 编译为静态图，提升计算性能
-        # self.__q_net_target.compile(optimizer='adam',
-        #                             loss='MSE',
-        #                             metrics=['accuracy'])
-
-    # action sequence, 0, 1, 2, ...
+        self.__q_net = QNet()
 
     def action(self, state):
         action = 0
@@ -78,9 +84,7 @@ class DeepQ(object):
         else:
             one_state_batch = np.asarray([state])
             q_value = self.__q_net.predict(one_state_batch)
-            tf.keras.backend.clear_session()
-            action = np.argmax(q_value)
-            
+            action = torch.argmax(q_value).item()
         return action
 
     def train(self, max_episode, current_epsisode):
@@ -98,37 +102,21 @@ class DeepQ(object):
         # use original q value give by current(untrained) q_net, i.e do not train this part
         # 当前网络给出的预测值
         # y_batch = np.zeros((self.mini_batch_size, self.__action_dimension))
-        y_batch = self.__q_net.predict(state_batch).copy()
+        y_batch = self.__q_net.predict(state_batch)
 
         next_state_q_value_batch = self.__q_net.predict(
             next_state_batch)  # 当前网络对next_state的q给出的预测值
 
-        tf.keras.backend.clear_session()
-        
         for mini_batch_iter in range(self.mini_batch_size):
             if done_batch[mini_batch_iter]:
                 y_batch[mini_batch_iter,
                         action_batch[mini_batch_iter]] = reward_batch[mini_batch_iter]
             else:
                 y_batch[mini_batch_iter,
-                        action_batch[mini_batch_iter]] = reward_batch[mini_batch_iter] + self.__discount_factor_gamma * np.max(next_state_q_value_batch[mini_batch_iter])
-      
-       
+                        action_batch[mini_batch_iter]] = reward_batch[mini_batch_iter] + self.__discount_factor_gamma * torch.max(next_state_q_value_batch[mini_batch_iter])
 
-        q_net_metrics = self.__q_net.train_on_batch(state_batch, y_batch)
-
+        q_net_metrics = self.__q_net.train(state_batch, y_batch)
         self.train_number += 1
-
-        # if(self.train_number % 100 == 0):
-        #     self.__q_net_target = self.__q_net
-        #     print("No.%d train q_net metrics = " %
-        #           self.train_number, q_net_metrics)
-
-    def load(self):
-        return
-
-    def save(self):
-        return 0
 
     def remember(self, state, action, reward, next_state, done):
         self.replay_buffer.add(state, action, reward, next_state, done)

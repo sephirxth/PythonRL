@@ -4,8 +4,13 @@
 
 import tensorflow as tf
 import numpy as np
-from tensorflow.python.keras import layers
-from tensorflow.python.keras.optimizers import RMSprop
+# from tensorflow.keras import layers
+# from tensorflow.keras.optimizers import RMSprop
+
+from tensorflow import keras
+
+
+
 
 import Maze
 
@@ -13,8 +18,8 @@ import Maze
 class Eval_Model(tf.keras.Model):
     def __init__(self, num_actions):
         super().__init__('mlp_q_network')
-        self.layer1 = layers.Dense(10, activation='relu')
-        self.logits = layers.Dense(num_actions, activation=None)
+        self.layer1 = keras.layers.Dense(10, activation='relu')
+        self.logits = keras.layers.Dense(num_actions, activation=None)
 
     def call(self, inputs):
         x = tf.convert_to_tensor(inputs)
@@ -26,8 +31,8 @@ class Eval_Model(tf.keras.Model):
 class Target_Model(tf.keras.Model):
     def __init__(self, num_actions):
         super().__init__('mlp_q_network_1')
-        self.layer1 = layers.Dense(10, trainable=False, activation='relu')
-        self.logits = layers.Dense(
+        self.layer1 = keras.layers.Dense(10, trainable=False, activation='relu')
+        self.logits = keras.layers.Dense(
             num_actions, trainable=False, activation=None)
 
     def call(self, inputs):
@@ -65,8 +70,8 @@ class DeepQNetwork:
         self.target_model = target_model
 
         self.eval_model.compile(
-            # optimizer=RMSprop(lr=self.params['learning_rate']),
-            optimizer="adam",
+            optimizer=tf.keras.optimizers.RMSprop(lr=self.params['learning_rate']),
+            # optimizer="adam",
             loss='mse'
         )
         self.cost_his = []
@@ -218,7 +223,9 @@ def main():
     for episode in range(EPISODE):
         # initialize task
         # print("esisode = ",episode)
+        keras.backend.clear_session()
         observation = env.reset()
+        
         # Train
         for step in range(STEP):
             # fresh env
@@ -241,7 +248,7 @@ def main():
             for i in range(TEST):
                 state = env.reset()
                 for j in range(STEP):
-                    env.render()
+                    # env.render()
                     # direct action for test
                     action = RL.choose_action(observation)
                     state, reward, done, _ = env.step(action)

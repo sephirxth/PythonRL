@@ -1,15 +1,8 @@
-import tensorflow as tf
+import torch
+x = torch.IntTensor([[1,1,1],[2,2,2],[3,3,3]])
+print(x)
+print((x, x, x))
 
-class MyModuleOne(tf.Module):
-    def __init__(self):
-        self.v0 = tf.Variable(1.0)
-        self.vs = [tf.Variable(x) for x in range(10)]
+print("connect dimension = 0", torch.cat((x, x, x), 0))
 
-class MyOtherModule(tf.Module):
-    def __init__(self):
-        self.m = MyModuleOne()
-        self.v = tf.Variable(10.0)
-
-m = MyOtherModule()
-print(m.variables)
-len(m.variables)
+print("connect dimension = 1", torch.cat((x, x, x), 1))

@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt  # 可视化模块
 import numpy as np
-import tensorflow as tf
 from tensorflow import keras
+import tensorflow as tf
+
 
 np.random.seed(1337)  # for reproducibility
 
@@ -33,11 +34,13 @@ model.summary()
 
 # training
 print('Training -----------')
-for step in range(300):
+for step in range(500):
     cost = model.train_on_batch(X_train, Y_train)
+    # tf.keras.backend.clear_session()
     if step % 100 == 0:
         print('train cost: ', cost)
 
+tf.keras.backend.clear_session()
 # test
 print('\nTesting ------------')
 cost = model.evaluate(X_test, Y_test, batch_size=32)
@@ -45,6 +48,13 @@ print('test cost:', cost)
 W, b = model.layers[0].get_weights()
 print('Weights=', W, '\nbiases=', b)
 
+@tf.function
+def predict():
+    model.predict(X_test)
+    
+for i in range(10000):
+    predict()
+    tf.keras.backend.clear_session()
 
 
 # plotting the prediction

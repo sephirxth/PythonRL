@@ -1,0 +1,9 @@
+setlocal
+"C:/Program Files/CMake/bin/cmake.exe" -E copy_if_different D:/working/WorkingInEnhancedAIMSUNPlatform/LaneChanging/microSDK_EnhancedAimsun/libtorch-win-shared-with-deps-latest/libtorch/lib/c10.dll D:/working/WorkingInEnhancedAIMSUNPlatform/LaneChanging/microSDK_EnhancedAimsun/libtorch-win-shared-with-deps-latest/libtorch/lib/caffe2_detectron_ops.dll D:/working/WorkingInEnhancedAIMSUNPlatform/LaneChanging/microSDK_EnhancedAimsun/libtorch-win-shared-with-deps-latest/libtorch/lib/caffe2_module_test_dynamic.dll D:/working/WorkingInEnhancedAIMSUNPlatform/LaneChanging/microSDK_EnhancedAimsun/libtorch-win-shared-with-deps-latest/libtorch/lib/libiomp5md.dll D:/working/WorkingInEnhancedAIMSUNPlatform/LaneChanging/microSDK_EnhancedAimsun/libtorch-win-shared-with-deps-latest/libtorch/lib/libiompstubs5md.dll D:/working/WorkingInEnhancedAIMSUNPlatform/LaneChanging/microSDK_EnhancedAimsun/libtorch-win-shared-with-deps-latest/libtorch/lib/torch.dll "D:/Aimsun 8.1"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
